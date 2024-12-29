@@ -1,0 +1,26 @@
+name: citron
+
+services:
+  citron-database:
+    container_name: citron-database
+    image: mariadb:10.4.29 # Using the same MariaDB version as on Toolforge
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: 12345
+    volumes:
+      - citron-database-data:/var/lib/mysql
+      - ./database:/docker-entrypoint-initdb.d
+    ports:
+      - '8012:3306'
+    networks:
+      - citron-network
+    healthcheck:
+      test: mysqladmin ping -h localhost -uroot -p12345
+
+volumes:
+  citron-database-data:
+    driver: local
+
+networks:
+  citron-network:
+    driver: bridge

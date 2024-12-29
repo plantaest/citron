@@ -1,0 +1,115 @@
+quarkus:
+  analytics:
+    disabled: true
+  http:
+    port: 8010
+    cors:
+      ~: true
+      origins:
+        - https://citron.toolforge.org
+  smallrye-openapi:
+    info-title: Citron API Docs
+    info-version: 0.1.0-alpha.1
+    info-contact-name: Plantaest
+    info-contact-url: https://meta.wikimedia.org/wiki/User:Plantaest
+    info-contact-email: plantaest@gmail.com
+    info-license-name: GNU Affero General Public License version 3
+    info-license-url: https://www.gnu.org/licenses/agpl-3.0.html
+    operation-id-strategy: METHOD
+  swagger-ui:
+    theme: original
+    path: /api-docs
+    always-include: true
+    title: Citron API Docs
+    operations-sorter: method
+    tags-sorter: alpha
+    doc-expansion: none
+    display-request-duration: true
+    show-extensions: true
+    show-common-extensions: true
+    default-model-expand-depth: 10
+    default-models-expand-depth: 10
+  log:
+    console:
+      format: "%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c{3.}] (%t) :%X{request_id}: %s%e%n"
+    file:
+      enable: true
+      path: logs/citron.log
+      format: "%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c{3.}] (%t) :%X{request_id}: %s%e%n"
+      rotation:
+        max-file-size: 10M
+        max-backup-index: 50
+        file-suffix: .yyyy-MM-dd.gz
+        rotate-on-boot: false
+  cache:
+    caffeine:
+      expire-after-write: 48h
+      maximum-size: 5000
+
+citron:
+  version: 0.1.0-alpha.1
+  report-version: 1
+  bot:
+    username: ${BOT_USERNAME}
+    password: ${BOT_PASSWORD}
+  models:
+    - id: viwiki_model_v1
+      path: model/citron_spam_viwiki_model_v1.onnx
+  classifier:
+    aka-ranks-file-path: data/plain_aka_ranks.csv
+    tranco-ranks-file-path: data/plain_tranco_ranks.csv
+    majestic-million-ranks-file-path: data/plain_majestic_million_ranks.csv
+    cloudflare-radar-domains-file-path: data/plain_cloudflare_radar_list.csv
+    special-words-file-path: data/special_words.csv
+    commercial-tlds-file-path: data/commercial_tlds.csv
+    entertainment-tlds-file-path: data/entertainment_tlds.csv
+    gambling-tlds-file-path: data/gambling_tlds.csv
+    suspicious-tlds-file-path: data/suspicious_tlds.csv
+    open-page-rank-api-key: ${OPEN_PAGE_RANK_API_KEY}
+  spam-module:
+    wikis:
+      viwiki:
+        wiki-id: viwiki
+        wiki-server-name: vi.wikipedia.org
+        ignored-user-groups:
+          - sysop
+          - eliminator
+          - autopatrolled
+          - extendedconfirmed
+        announcement-page: "Wikipedia:Tin nhắn cho bảo quản viên"
+        announcement-section: "(Citron/Spam) Báo cáo ngày {day} tháng {month}, {year}"
+  dev:
+    enable-stream-runner: true
+    enable-report-runner: false
+
+"%dev":
+  quarkus:
+    log:
+      category:
+        WebApplicationException:
+          level: DEBUG
+        "io.github.plantaest.citron":
+          level: DEBUG
+        "org.jboss.resteasy.reactive.server.handlers.ParameterHandler":
+          level: DEBUG
+        "org.jboss.resteasy.reactive.common.core.AbstractResteasyReactiveContext":
+          level: DEBUG
+      file:
+        enable: false
+    datasource:
+      db-kind: mariadb
+      username: root
+      password: 12345
+      jdbc:
+        url: jdbc:mariadb://localhost:8012/citron
+
+"%prod":
+  quarkus:
+    http:
+      port: 8000
+    datasource:
+      db-kind: mariadb
+      username: ${TOOL_TOOLSDB_USER}
+      password: ${TOOL_TOOLSDB_PASSWORD}
+      jdbc:
+        url: jdbc:mariadb://tools.db.svc.wikimedia.cloud:3306/${TOOL_TOOLSDB_USER}__citron
