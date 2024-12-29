@@ -44,12 +44,18 @@ public class ReportRunner {
     @Inject
     ReportedHostnameRepository reportedHostnameRepository;
 
-    @Scheduled(cron = "0 0 * * * ?", timeZone = "UTC")
+    @Scheduled(cron = "56 59 * * * ?", timeZone = "UTC")
     public void report() throws JsonProcessingException {
         ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC);
         var wikis = citronConfig.spamModule().wikis().values();
 
         for (var wiki : wikis) {
+            List<ReportedHostname> reportedHostnames = reportedHostnameRepository.findAllForToday(wiki.wikiId());
+
+            if (reportedHostnames.isEmpty()) {
+                continue;
+            }
+
             WikiRestClient wikiRestClient = wikiRestClientManager.getClient(wiki.wikiServerName());
             WikiActionClient wikiActionClient = wikiActionClientManager.getClient(wiki.wikiServerName());
             String reportPageTitle = "Project:Citron/Spam/%s.json".formatted(now.toLocalDate());
@@ -63,12 +69,6 @@ public class ReportRunner {
             } catch (Exception e) {
                 Log.warnf("Unable to get or parse report from '%s' on %s; it may not exist yet: %s",
                         reportPageTitle, wiki.wikiId(), e.getMessage());
-            }
-
-            List<ReportedHostname> reportedHostnames = reportedHostnameRepository.findAllForToday(wiki.wikiId());
-
-            if (reportedHostnames.isEmpty()) {
-                continue;
             }
 
             List<Report.Hostname> hostnames = reportedHostnames.stream()
@@ -134,7 +134,7 @@ public class ReportRunner {
                     "contentmodel", "json"
             ));
 
-            Log.infof("Updated report '%s' on %s at %s", now.toLocalDate(), wiki.wikiId(), updatedAt);
+            Log.infof("Updated report '%s' on %s", now.toLocalDate(), wiki.wikiId());
         }
     }
 
@@ -176,6 +176,8 @@ public class ReportRunner {
                             .replace("{month}", String.valueOf(now.getMonthValue()))
                             .replace("{year}", String.valueOf(now.getYear()))
             ));
+
+            wikiActionClient.purge(wiki.announcementPage());
 
             Log.infof("Announced report '%s' on %s", now.toLocalDate(), wiki.wikiId());
         }

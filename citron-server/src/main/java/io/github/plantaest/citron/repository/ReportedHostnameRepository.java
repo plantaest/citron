@@ -1,6 +1,7 @@
 package io.github.plantaest.citron.repository;
 
 import io.github.plantaest.citron.entity.ReportedHostname;
+import io.quarkus.runtime.configuration.ConfigUtils;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.jdbi.v3.core.Jdbi;
@@ -44,7 +45,10 @@ public class ReportedHostnameRepository {
                             AND created_at <= CONVERT_TZ(NOW(), '+00:00', :timeZone)
                         """)
                 .bind("wikiId", wikiId)
-                .bind("timeZone", ZonedDateTime.now(ZoneId.systemDefault()).getOffset().toString())
+                // TODO: Improve timeZone
+                .bind("timeZone", ConfigUtils.isProfileActive("prod")
+                        ? "+00:00"
+                        : ZonedDateTime.now(ZoneId.systemDefault()).getOffset().toString())
                 .mapTo(ReportedHostname.class)
                 .list());
     }
@@ -61,7 +65,9 @@ public class ReportedHostnameRepository {
                         ) AS has_result;
                         """)
                 .bind("wikiId", wikiId)
-                .bind("timeZone", ZonedDateTime.now(ZoneId.systemDefault()).getOffset().toString())
+                .bind("timeZone", ConfigUtils.isProfileActive("prod")
+                        ? "+00:00"
+                        : ZonedDateTime.now(ZoneId.systemDefault()).getOffset().toString())
                 .mapTo(boolean.class)
                 .one());
     }

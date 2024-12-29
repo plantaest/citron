@@ -45,6 +45,9 @@ quarkus:
     caffeine:
       expire-after-write: 48h
       maximum-size: 5000
+  package:
+    jar:
+      type: uber-jar
 
 citron:
   version: 0.1.0-alpha.1
@@ -80,7 +83,7 @@ citron:
         announcement-section: "(Citron/Spam) Báo cáo ngày {day} tháng {month}, {year}"
   dev:
     enable-stream-runner: true
-    enable-report-runner: false
+    enable-report-runner: true
 
 "%dev":
   quarkus:

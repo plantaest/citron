@@ -58,4 +58,8 @@ public interface WikiActionClient {
     @Produces(MediaType.APPLICATION_JSON)
     JsonNode edit(@RestForm Map<String, String> params);
 
+    @POST
+    @ClientFormParam(name = "action", value = "purge")
+    JsonNode purge(@FormParam("titles") String titles);
+
 }
