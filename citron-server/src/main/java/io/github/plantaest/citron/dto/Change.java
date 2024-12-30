@@ -20,6 +20,7 @@ public record Change(
         @JsonProperty("notify_url")
         URI notifyUrl,
         boolean minor,
+        boolean patrolled,
         Length length,
         Revision revision,
         @JsonProperty("server_url")

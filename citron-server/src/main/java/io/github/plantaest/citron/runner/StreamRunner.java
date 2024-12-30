@@ -107,6 +107,7 @@ public class StreamRunner {
                 && !"canary".equals(change.meta().domain())
                 && "edit".equals(change.type())
                 && !change.bot()
+                && !change.patrolled()
                 && allowedWikiIds.contains(change.wiki())
         ) {
             managedExecutor.execute(() -> process(change));
