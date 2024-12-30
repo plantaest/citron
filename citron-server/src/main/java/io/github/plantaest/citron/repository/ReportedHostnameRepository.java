@@ -1,12 +1,10 @@
 package io.github.plantaest.citron.repository;
 
 import io.github.plantaest.citron.entity.ReportedHostname;
-import io.quarkus.runtime.configuration.ConfigUtils;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.jdbi.v3.core.Jdbi;
 
-import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.List;
 
@@ -35,39 +33,36 @@ public class ReportedHostnameRepository {
                 .execute());
     }
 
-    public List<ReportedHostname> findAllForToday(String wikiId) {
+    public List<ReportedHostname> findAllByDateRange(String wikiId, ZonedDateTime from, ZonedDateTime to) {
         return jdbi.inTransaction(handle -> handle
                 .createQuery("""
                         SELECT *
                         FROM citron_spam__reported_hostname
                         WHERE wiki_id = :wikiId
-                            AND created_at >= CONVERT_TZ(CURDATE(), '+00:00', :timeZone)
-                            AND created_at <= CONVERT_TZ(NOW(), '+00:00', :timeZone)
+                            AND created_at >= :from
+                            AND created_at <= :to
                         """)
                 .bind("wikiId", wikiId)
-                // TODO: Improve timeZone
-                .bind("timeZone", ConfigUtils.isProfileActive("prod")
-                        ? "+00:00"
-                        : ZonedDateTime.now(ZoneId.systemDefault()).getOffset().toString())
+                .bind("from", from)
+                .bind("to", to)
                 .mapTo(ReportedHostname.class)
                 .list());
     }
 
-    public boolean hasRecordsForToday(String wikiId) {
+    public boolean hasRecordsByDateRange(String wikiId, ZonedDateTime from, ZonedDateTime to) {
         return jdbi.inTransaction(handle -> handle
                 .createQuery("""
                         SELECT EXISTS (
                             SELECT 1
                             FROM citron_spam__reported_hostname
                             WHERE wiki_id = :wikiId
-                                AND created_at >= CONVERT_TZ(CURDATE(), '+00:00', :timeZone)
-                                AND created_at <= CONVERT_TZ(NOW(), '+00:00', :timeZone)
+                                AND created_at >= :from
+                                AND created_at <= :to
                         ) AS has_result;
                         """)
                 .bind("wikiId", wikiId)
-                .bind("timeZone", ConfigUtils.isProfileActive("prod")
-                        ? "+00:00"
-                        : ZonedDateTime.now(ZoneId.systemDefault()).getOffset().toString())
+                .bind("from", from)
+                .bind("to", to)
                 .mapTo(boolean.class)
                 .one());
     }

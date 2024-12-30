@@ -75,6 +75,8 @@ public class StreamRunner {
     void init() {
         cancellable = wikimediaStreamsClient.getRawRecentChanges()
                 .onFailure().retry().indefinitely()
+                .onSubscription()
+                .invoke(() -> Log.info("Connected to Wikimedia EventStreams"))
                 .subscribe()
                 .with(
                         this::onItem,
@@ -92,7 +94,7 @@ public class StreamRunner {
 
     private void onItem(String rawChange) {
         if (rawChange == null || rawChange.isBlank()) {
-            Log.info("The EventStreams data is empty, possibly because it has just (re-)started.");
+            Log.debugf("The EventStreams data is empty, possibly because it has just (re-)started.");
             return;
         }
 

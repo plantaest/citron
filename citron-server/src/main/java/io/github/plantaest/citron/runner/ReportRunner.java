@@ -21,6 +21,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import java.time.Instant;
+import java.time.LocalTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -44,13 +45,15 @@ public class ReportRunner {
     @Inject
     ReportedHostnameRepository reportedHostnameRepository;
 
-    @Scheduled(cron = "56 59 * * * ?", timeZone = "UTC")
+    @Scheduled(cron = "59 59 * * * ?", timeZone = "UTC")
     public void report() throws JsonProcessingException {
         ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC);
+        ZonedDateTime startOfDay = now.with(LocalTime.MIN);
         var wikis = citronConfig.spamModule().wikis().values();
 
         for (var wiki : wikis) {
-            List<ReportedHostname> reportedHostnames = reportedHostnameRepository.findAllForToday(wiki.wikiId());
+            List<ReportedHostname> reportedHostnames = reportedHostnameRepository
+                    .findAllByDateRange(wiki.wikiId(), startOfDay, now);
 
             if (reportedHostnames.isEmpty()) {
                 continue;
@@ -138,13 +141,14 @@ public class ReportRunner {
         }
     }
 
-    @Scheduled(cron = "0 0 0/3 * * ?", timeZone = "UTC")
+    @Scheduled(cron = "59 59 * * * ?", timeZone = "UTC")
     public void announce() {
         ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC);
+        ZonedDateTime startOfDay = now.with(LocalTime.MIN);
         var wikis = citronConfig.spamModule().wikis().values();
 
         for (var wiki : wikis) {
-            if (!reportedHostnameRepository.hasRecordsForToday(wiki.wikiId())) {
+            if (!reportedHostnameRepository.hasRecordsByDateRange(wiki.wikiId(), startOfDay, now)) {
                 continue;
             }
 
