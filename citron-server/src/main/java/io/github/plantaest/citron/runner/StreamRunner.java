@@ -26,6 +26,7 @@ import io.quarkus.arc.properties.IfBuildProperty;
 import io.quarkus.cache.CacheResult;
 import io.quarkus.logging.Log;
 import io.quarkus.runtime.Startup;
+import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.subscription.Cancellable;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -33,12 +34,14 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.eclipse.microprofile.context.ManagedExecutor;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
+import org.jboss.resteasy.reactive.client.SseEvent;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 
 @Startup
@@ -70,13 +73,16 @@ public class StreamRunner {
     TsidFactory tsidFactory;
 
     private Cancellable cancellable;
+    private final AtomicReference<String> lastEventIdRef = new AtomicReference<>();
 
     @PostConstruct
     void init() {
-        cancellable = wikimediaStreamsClient.getRawRecentChanges()
-                .onFailure().retry().indefinitely()
+        cancellable = Multi.createFrom()
+                .deferred(() -> wikimediaStreamsClient.getRawRecentChanges(lastEventIdRef.get()))
                 .onSubscription()
                 .invoke(() -> Log.info("Connected to Wikimedia EventStreams"))
+                .onFailure()
+                .retry().indefinitely()
                 .subscribe()
                 .with(
                         this::onItem,
@@ -92,13 +98,9 @@ public class StreamRunner {
         }
     }
 
-    private void onItem(String rawChange) {
-        if (rawChange == null || rawChange.isBlank()) {
-            Log.debugf("The EventStreams data is empty, possibly because it has just (re-)started.");
-            return;
-        }
-
-        Change change = parse(rawChange);
+    private void onItem(SseEvent<String> event) {
+        lastEventIdRef.set(event.id());
+        Change change = parse(event.data());
         Set<String> allowedWikiIds = citronConfig.spamModule().wikis().keySet();
 
         if (change != null
@@ -112,6 +114,9 @@ public class StreamRunner {
     }
 
     private void process(Change change) {
+        Log.infof("Processing Change(wiki=%s, user=%s, page=%s, revision=%s)",
+                change.wiki(), change.user(), change.title(), change.revision()._new());
+
         try {
             if (isIgnoredUser(change.wiki(), change.serverName(), change.user())) {
                 return;
@@ -165,14 +170,14 @@ public class StreamRunner {
                 reportedHostnameRepository.save(reportedHostname);
             }
 
-            Log.infof("Change (wiki=%s, user=%s, page=%s, revision=%s): Extracted hostnames: (%s) %s; Reported hostnames: (%s) %s",
+            Log.infof("Processed Change(wiki=%s, user=%s, page=%s, revision=%s): Extracted: (%s) %s; Reported: (%s) %s",
                     change.wiki(), change.user(), change.title(), change.revision()._new(),
                     extractedHostnames.size(), extractedHostnames,
                     reportedHostnames.size(), reportedHostnames.stream()
                             .map(hostname -> "%s (%s)".formatted(hostname.hostname(), hostname.score()))
                             .toList());
         } catch (Exception e) {
-            Log.errorf("Unable to process change (wiki=%s, user=%s, page=%s, revision=%s): %s",
+            Log.errorf("Unable to process Change(wiki=%s, user=%s, page=%s, revision=%s): %s",
                     change.wiki(), change.user(), change.title(), change.revision()._new(), e.getMessage());
         }
     }
