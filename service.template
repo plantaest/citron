@@ -1,6 +1,6 @@
 backend: kubernetes
-cpu: 3000m
-mem: 6Gi
+cpu: 1500m
+mem: 5Gi
 replicas: 1
 type: bookworm
 extra_args:
