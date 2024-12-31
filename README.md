@@ -8,5 +8,5 @@ Auto monitor RecentChanges
 (c) Plantaest
 
 License:
-* GNU Affero General Public License version 3 for Feverfew application
+* GNU Affero General Public License version 3 for Citron application
 ```
