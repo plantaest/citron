@@ -14,4 +14,21 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  build: {
+    lib: {
+      entry: 'src/main.ts',
+      name: 'CitronSpamGadget',
+      formats: ['iife'],
+    },
+    rollupOptions: {
+      external: ['vue', '@wikimedia/codex'],
+      output: {
+        format: 'iife',
+        globals: {
+          vue: 'Vue',
+          '@wikimedia/codex': 'Codex',
+        },
+      },
+    },
+  },
 });

@@ -1,7 +1,8 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import CitronSpamDialog from '@/components/CitronSpamDialog.vue';
+import { showDialog } from '@/stores/showDialog.ts';
+</script>
 
 <template>
-  <h1>Hello</h1>
+  <citron-spam-dialog v-if="showDialog" />
 </template>
-
-<style scoped></style>

@@ -3,7 +3,9 @@
   "include": [
     "env.d.ts",
     "src/**/*",
-    "src/**/*.vue"
+    "src/**/*.vue",
+    "./node_modules/types-mediawiki",
+    "./node_modules/@types/jquery"
   ],
   "exclude": [
     "src/**/__tests__/*"

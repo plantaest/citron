@@ -16,5 +16,7 @@
     document.head.appendChild(script);
   }
 
-  modules.forEach(createScriptNode);
+  mw.loader.using(['@wikimedia/codex']).then(function () {
+    modules.forEach(createScriptNode);
+  });
 })();
