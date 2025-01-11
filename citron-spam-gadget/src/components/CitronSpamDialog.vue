@@ -146,38 +146,41 @@ const onDefaultAction = () => {
     <div class="cdx-progress-bar" role="progressbar" v-if="reportQuery.isLoading">
       <div class="cdx-progress-bar__bar" />
     </div>
-    <div class="empty" v-if="reportQuery.error === 'missing'">404</div>
-    <div class="content" v-else>
+    <div class="citron-spam-empty" v-if="reportQuery.error === 'missing'">404</div>
+    <div class="citron-spam-content" v-else>
       <div
-        class="hostname"
+        class="citron-spam-hostname"
         :data-selected="radios[hostname.hostname]"
         v-for="(hostname, index) in report.hostnames"
         :key="hostname.hostname"
       >
-        <div class="hostname-indicator">
-          <div class="hostname-index">{{ index + 1 }}</div>
-          <div class="hostname-time">{{ hostname.time }}</div>
+        <div class="citron-spam-hostname-indicator">
+          <div class="citron-spam-hostname-index">{{ index + 1 }}</div>
+          <div class="citron-spam-hostname-time">{{ hostname.time }}</div>
         </div>
-        <div class="hostname-inner">
-          <div class="hostname-inner-top" :style="{ '--percentage': toPercentage(hostname.score) }">
+        <div class="citron-spam-hostname-inner">
+          <div
+            class="citron-spam-hostname-inner-top"
+            :style="{ '--percentage': toPercentage(hostname.score) }"
+          >
             <a
               role="button"
               :href="'//' + hostname.hostname"
               target="_blank"
-              class="hostname-inner-top-left"
+              class="citron-spam-hostname-inner-top-left"
               :class="{
-                'very-bad': hostname.score >= 0.8,
-                bad: hostname.score >= 0.5 && hostname.score < 0.8,
-                uncertain: hostname.score < 0.5,
+                'citron-spam-very-bad': hostname.score >= 0.8,
+                'citron-spam-bad': hostname.score >= 0.5 && hostname.score < 0.8,
+                'citron-spam-uncertain': hostname.score < 0.5,
               }"
             >
-              <div class="hostname-hostname">
+              <div class="citron-spam-hostname-hostname">
                 {{ hostname.hostname }}
               </div>
-              <div class="hostname-score">{{ toPercentage(hostname.score) }}</div>
+              <div class="citron-spam-hostname-score">{{ toPercentage(hostname.score) }}</div>
             </a>
 
-            <div class="hostname-inner-top-right">
+            <div class="citron-spam-hostname-inner-top-right">
               <cdx-field :is-fieldset="true" :hide-label="true">
                 <cdx-radio
                   :inline="true"
@@ -202,9 +205,9 @@ const onDefaultAction = () => {
             </div>
           </div>
 
-          <div class="hostname-inner-bottom">
+          <div class="citron-spam-hostname-inner-bottom">
             <div
-              class="revision"
+              class="citron-spam-revision"
               v-for="revision in getRevisions(hostname.revisionIds)"
               :key="revision.id"
             >
@@ -222,32 +225,32 @@ const onDefaultAction = () => {
 
 <style scoped>
 :global(.citron-spam-dialog) {
-  max-width: 60rem;
+  max-width: 60rem !important;
 }
 
 :global(.citron-spam-dialog .cdx-dialog__header__subtitle) {
   font-family: monospace;
 }
 
-.empty {
+.citron-spam-empty {
   text-align: center;
   font-size: 5rem;
   font-family: monospace;
   color: var(--color-error, #bf3c2c);
 }
 
-.content {
+.citron-spam-content {
   display: flex;
   flex-direction: column;
   gap: 0.625rem;
   font-size: 0.875rem;
 }
 
-.content * {
+.citron-spam-content * {
   box-sizing: border-box;
 }
 
-.hostname {
+.citron-spam-hostname {
   display: flex;
   justify-content: space-between;
   gap: 0.625rem;
@@ -262,12 +265,12 @@ const onDefaultAction = () => {
   }
 }
 
-.hostname-indicator {
+.citron-spam-hostname-indicator {
   display: flex;
   gap: 0.625rem;
 }
 
-.hostname-index {
+.citron-spam-hostname-index {
   height: 1.75rem;
   width: 1.75rem;
   display: flex;
@@ -277,7 +280,7 @@ const onDefaultAction = () => {
   border: 1px dashed var(--border-color-base, #a2a9b1);
 }
 
-.hostname-time {
+.citron-spam-hostname-time {
   padding-inline: 0.5rem;
   display: flex;
   align-items: center;
@@ -290,7 +293,7 @@ const onDefaultAction = () => {
   width: max-content;
 }
 
-.hostname-inner {
+.citron-spam-hostname-inner {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -300,14 +303,14 @@ const onDefaultAction = () => {
   padding-inline-start: 0.625rem;
 }
 
-.hostname-inner-top {
+.citron-spam-hostname-inner-top {
   display: flex;
   justify-content: space-between;
   gap: 0.625rem;
   flex-direction: column;
 }
 
-.hostname-inner-top-left {
+.citron-spam-hostname-inner-top-left {
   padding-inline: 0.5rem;
   height: 1.75rem;
   overflow: hidden;
@@ -326,7 +329,7 @@ const onDefaultAction = () => {
   }
 }
 
-.hostname-hostname {
+.citron-spam-hostname-hostname {
   font-family: monospace;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -335,7 +338,7 @@ const onDefaultAction = () => {
   align-items: center;
 }
 
-.hostname-score {
+.citron-spam-hostname-score {
   white-space: nowrap;
   font-size: 0.75rem;
   display: flex;
@@ -343,7 +346,7 @@ const onDefaultAction = () => {
   justify-content: center;
 }
 
-.hostname-inner-top-right {
+.citron-spam-hostname-inner-top-right {
   display: flex;
   gap: 0.625rem;
   align-items: center;
@@ -353,13 +356,13 @@ const onDefaultAction = () => {
   }
 }
 
-.hostname-inner-bottom {
+.citron-spam-hostname-inner-bottom {
   display: flex;
   gap: 0.625rem;
   flex-wrap: wrap;
 }
 
-.revision {
+.citron-spam-revision {
   padding-block: 0.3rem;
   padding-inline: 0.5rem;
   font-size: 0.75rem;
@@ -375,23 +378,23 @@ const onDefaultAction = () => {
 /* Responsive */
 
 @media (min-width: 576px) {
-  .hostname,
-  .hostname-inner-top {
+  .citron-spam-hostname,
+  .citron-spam-hostname-inner-top {
     flex-direction: row;
   }
 
-  .hostname-inner-top {
+  .citron-spam-hostname-inner-top {
     gap: 1rem;
   }
 
-  .hostname-inner-top-left {
+  .citron-spam-hostname-inner-top-left {
     flex: 1;
   }
 }
 
 /* Utilities  */
 
-.very-bad {
+.citron-spam-very-bad {
   background-image: linear-gradient(
     to right,
     var(--background-color-destructive-subtle--hover, #ffdad3) var(--percentage),
@@ -401,7 +404,7 @@ const onDefaultAction = () => {
   border: 1px solid var(--border-color-destructive, #f54739);
 }
 
-.bad {
+.citron-spam-bad {
   background-image: linear-gradient(
     to right,
     light-dark(#ffdcb8, #572c19) var(--percentage),
@@ -411,7 +414,7 @@ const onDefaultAction = () => {
   border: 1px solid #d46926;
 }
 
-.uncertain {
+.citron-spam-uncertain {
   background-image: linear-gradient(
     to right,
     var(--background-color-progressive-subtle--hover, #dce3f9) var(--percentage),
