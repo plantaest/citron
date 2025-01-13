@@ -51,6 +51,8 @@ public interface CitronConfig {
         String openPageRankApiKey();
     }
 
+    String ignoredSuffixesFilePath();
+
     SpamModule spamModule();
 
     interface SpamModule {

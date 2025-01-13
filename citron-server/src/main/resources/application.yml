@@ -69,6 +69,7 @@ citron:
     gambling-tlds-file-path: data/gambling_tlds.csv
     suspicious-tlds-file-path: data/suspicious_tlds.csv
     open-page-rank-api-key: ${OPEN_PAGE_RANK_API_KEY}
+  ignored-suffixes-file-path: data/ignored_suffixes.csv
   spam-module:
     wikis:
       viwiki:

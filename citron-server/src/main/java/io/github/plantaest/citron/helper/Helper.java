@@ -225,7 +225,10 @@ public class Helper {
                     URI uri = new URI(link);
                     String hostname = uri.getHost();
                     if (hostname != null && hostname.contains(".")) {
-                        extractedHostnames.add(hostname);
+                        String[] parts = hostname.split("\\.");
+                        if (parts.length >= 2 && parts[parts.length - 1].length() >= 2) {
+                            extractedHostnames.add(hostname.toLowerCase());
+                        }
                     }
                 } catch (URISyntaxException e) {
                     Log.errorf("Unable to parse URI: %s", e);

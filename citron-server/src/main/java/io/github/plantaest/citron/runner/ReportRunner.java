@@ -17,8 +17,8 @@ import io.github.plantaest.citron.repository.ReportedHostnameRepository;
 import io.quarkus.arc.properties.IfBuildProperty;
 import io.quarkus.logging.Log;
 import io.quarkus.scheduler.Scheduled;
-import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import java.time.Instant;
 import java.time.LocalTime;
@@ -28,9 +28,10 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
-@ApplicationScoped
+@Singleton
 @IfBuildProperty(name = "citron.dev.enable-report-runner", stringValue = "true")
 public class ReportRunner {
 
@@ -45,7 +46,7 @@ public class ReportRunner {
     @Inject
     ReportedHostnameRepository reportedHostnameRepository;
 
-    @Scheduled(cron = "59 59 * * * ?", timeZone = "UTC")
+    @Scheduled(cron = "59 * * * * ?", timeZone = "UTC")
     public void report() throws JsonProcessingException {
         ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC);
         ZonedDateTime startOfDay = now.with(LocalTime.MIN);
@@ -64,10 +65,11 @@ public class ReportRunner {
             String reportPageTitle = "Project:Citron/Spam/%s.json".formatted(now.toLocalDate());
 
             List<Report.Feedback> feedbacks = new ArrayList<>();
+            Report currentReport = ReportBuilder.builder().build();
 
             try {
                 WikiPageResponse wikiPageResponse = wikiRestClient.getPage(reportPageTitle);
-                Report currentReport = objectMapper.readValue(wikiPageResponse.source(), Report.class);
+                currentReport = objectMapper.readValue(wikiPageResponse.source(), Report.class);
                 feedbacks.addAll(currentReport.feedbacks());
             } catch (Exception e) {
                 Log.warnf("Unable to get or parse report from '%s' on %s; it may not exist yet: %s",
@@ -115,7 +117,8 @@ public class ReportRunner {
                                     .page(rh.page())
                                     .user(rh.user())
                                     .build(),
-                            (existing, replacement) -> existing
+                            (existing, replacement) -> existing,
+                            TreeMap::new
                     ));
 
             String updatedAt = now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'"));
@@ -127,6 +130,14 @@ public class ReportRunner {
                     .revisions(revisions)
                     .feedbacks(feedbacks)
                     .build();
+
+            // Comparison
+            Report _currentReport = ReportBuilder.builder(currentReport).updatedAt("__").build();
+            Report _report = ReportBuilder.builder(report).updatedAt("__").build();
+
+            if (_currentReport.equals(_report)) {
+                continue;
+            }
 
             // Save report
             wikiActionClient.edit(Map.of(

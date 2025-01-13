@@ -15,6 +15,10 @@ public class IgnoredHostnameRepository {
     Jdbi jdbi;
 
     public List<CheckHostnameResult> checkHostnames(String wikiId, List<String> hostnames) {
+        if (hostnames.isEmpty()) {
+            return List.of();
+        }
+
         String hostnamesQuery = hostnames.stream()
                 .map(hostname -> "SELECT '" + hostname + "' AS hostname")
                 .collect(Collectors.joining(" UNION ALL "));

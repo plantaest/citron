@@ -16,6 +16,7 @@ import io.github.plantaest.citron.entity.ReportedHostnameBuilder;
 import io.github.plantaest.citron.enumeration.Model;
 import io.github.plantaest.citron.helper.DiffComparison;
 import io.github.plantaest.citron.helper.Helper;
+import io.github.plantaest.citron.helper.IgnoredSuffixes;
 import io.github.plantaest.citron.helper.classifier.ClassificationResult;
 import io.github.plantaest.citron.helper.classifier.Classifier;
 import io.github.plantaest.citron.helper.classifier.HostnameFeature;
@@ -30,8 +31,8 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.subscription.Cancellable;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
-import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import org.eclipse.microprofile.context.ManagedExecutor;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.resteasy.reactive.client.SseEvent;
@@ -43,9 +44,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 @Startup
-@ApplicationScoped
+@Singleton
 @IfBuildProperty(name = "citron.dev.enable-stream-runner", stringValue = "true")
 public class StreamRunner {
 
@@ -71,6 +73,8 @@ public class StreamRunner {
     ReportedHostnameRepository reportedHostnameRepository;
     @Inject
     TsidFactory tsidFactory;
+    @Inject
+    IgnoredSuffixes ignoredSuffixes;
 
     private Cancellable cancellable;
     private final AtomicReference<String> lastEventIdRef = new AtomicReference<>();
@@ -109,6 +113,7 @@ public class StreamRunner {
                 && !change.bot()
                 && !change.patrolled()
                 && allowedWikiIds.contains(change.wiki())
+                && isWithinLast30Seconds(change.timestamp())
         ) {
             managedExecutor.execute(() -> process(change));
         }
@@ -133,8 +138,12 @@ public class StreamRunner {
                 return;
             }
 
-            List<String> filteredHostnames = ignoredHostnameRepository
-                    .checkHostnames(change.wiki(), extractedHostnames)
+            List<String> filteredHostnames = extractedHostnames.stream()
+                    .filter(Predicate.not(ignoredSuffixes::contains))
+                    .collect(Collectors.collectingAndThen(
+                            Collectors.toList(),
+                            hostnames -> ignoredHostnameRepository.checkHostnames(change.wiki(), hostnames)
+                    ))
                     .stream()
                     .filter(Predicate.not(CheckHostnameResult::existed))
                     .map(CheckHostnameResult::hostname)
@@ -212,6 +221,11 @@ public class StreamRunner {
             Log.errorf("Unable to retrieve user groups for %s on %s: %s", username, wikiId, e.getMessage());
             return false;
         }
+    }
+
+    private boolean isWithinLast30Seconds(long timestamp) {
+        long currentTimestamp = Instant.now().getEpochSecond();
+        return currentTimestamp - timestamp <= 30 && currentTimestamp >= timestamp;
     }
 
 }
