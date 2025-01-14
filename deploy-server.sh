@@ -14,7 +14,7 @@ FILE_LINK=$1
 mkdir -p ~/jar
 
 # Download jar file
-curl -o ~/jar/citron-"$VERSION"-runner.jar "$FILE_LINK"
+curl -X POST -o ~/jar/citron-"$VERSION"-runner.jar "$FILE_LINK"
 
 # Display success message
 echo "Done!"

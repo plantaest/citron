@@ -85,6 +85,7 @@ citron:
   dev:
     enable-stream-runner: true
     enable-report-runner: true
+    enable-feedback-runner: true
 
 "%dev":
   quarkus:

@@ -77,5 +77,7 @@ public interface CitronConfig {
         boolean enableStreamRunner();
 
         boolean enableReportRunner();
+
+        boolean enableFeedbackRunner();
     }
 }

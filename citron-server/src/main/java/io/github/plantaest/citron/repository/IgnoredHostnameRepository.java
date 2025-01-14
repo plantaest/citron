@@ -40,4 +40,27 @@ public class IgnoredHostnameRepository {
                 .list());
     }
 
+    public boolean exists(String wikiId, String hostname) {
+        return jdbi.inTransaction(handle -> handle
+                .createQuery("""
+                        SELECT 1
+                        FROM citron_spam__ignored_hostname
+                        WHERE wiki_id = :wikiId AND hostname = :hostname
+                        LIMIT 1;
+                        """)
+                .bind("wikiId", wikiId)
+                .bind("hostname", hostname)
+                .mapTo(boolean.class)
+                .findFirst()
+                .orElse(false));
+    }
+
+    public void save(String wikiId, String hostname) {
+        jdbi.useTransaction(handle -> handle
+                .createUpdate("INSERT INTO citron_spam__ignored_hostname (wiki_id, hostname) VALUES (:wikiId, :hostname)")
+                .bind("wikiId", wikiId)
+                .bind("hostname", hostname)
+                .execute());
+    }
+
 }

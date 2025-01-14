@@ -214,7 +214,7 @@ public class Helper {
         return extractedHostnames.stream().toList();
     }
 
-    private static Set<String> extractHostnamesFromText(String text) {
+    public static Set<String> extractHostnamesFromText(String text) {
         Set<String> extractedHostnames = new TreeSet<>();
 
         if (text.contains("http://") || text.contains("https://")) {

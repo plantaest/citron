@@ -11,6 +11,7 @@ import io.github.plantaest.citron.dto.Change;
 import io.github.plantaest.citron.dto.CheckHostnameResult;
 import io.github.plantaest.citron.dto.CompareRevisionsResponse;
 import io.github.plantaest.citron.dto.UserGroupsResponse;
+import io.github.plantaest.citron.dto.WikiRevisionResponse;
 import io.github.plantaest.citron.entity.ReportedHostname;
 import io.github.plantaest.citron.entity.ReportedHostnameBuilder;
 import io.github.plantaest.citron.enumeration.Model;
@@ -40,6 +41,7 @@ import org.jboss.resteasy.reactive.client.SseEvent;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
@@ -109,7 +111,7 @@ public class StreamRunner {
 
         if (change != null
                 && !"canary".equals(change.meta().domain())
-                && "edit".equals(change.type())
+                && List.of("edit", "new").contains(change.type())
                 && !change.bot()
                 && !change.patrolled()
                 && allowedWikiIds.contains(change.wiki())
@@ -120,19 +122,28 @@ public class StreamRunner {
     }
 
     private void process(Change change) {
-        Log.infof("Processing Change(wiki=%s, user=%s, page=%s, revision=%s)",
-                change.wiki(), change.user(), change.title(), change.revision()._new());
+        Log.infof("Processing Change(wiki=%s, user=%s, page=%s, revision=%s, type=%s)",
+                change.wiki(), change.user(), change.title(), change.revision()._new(), change.type());
 
         try {
             if (isIgnoredUser(change.wiki(), change.serverName(), change.user())) {
                 return;
             }
 
+            List<String> extractedHostnames = new ArrayList<>();
             WikiRestClient wikiRestClient = wikiRestClientManager.getClient(change.serverName());
-            CompareRevisionsResponse comparison = wikiRestClient
-                    .compareRevisions(change.revision().old(), change.revision()._new());
-            List<DiffComparison> addedDiffComparisons = Helper.extractAddedDiffComparisons(comparison.diff());
-            List<String> extractedHostnames = Helper.extractHostnames(addedDiffComparisons);
+
+            if (change.revision().old() != null) {
+                // Change type is "edit"
+                CompareRevisionsResponse comparison = wikiRestClient
+                        .compareRevisions(change.revision().old(), change.revision()._new());
+                List<DiffComparison> addedDiffComparisons = Helper.extractAddedDiffComparisons(comparison.diff());
+                extractedHostnames.addAll(Helper.extractHostnames(addedDiffComparisons));
+            } else {
+                // Change type is "new"
+                WikiRevisionResponse revision = wikiRestClient.getRevision(change.revision()._new());
+                extractedHostnames.addAll(Helper.extractHostnamesFromText(revision.source()));
+            }
 
             if (extractedHostnames.isEmpty()) {
                 return;
@@ -180,15 +191,15 @@ public class StreamRunner {
                 reportedHostnameRepository.save(reportedHostname);
             }
 
-            Log.infof("Processed Change(wiki=%s, user=%s, page=%s, revision=%s): Extracted: (%s) %s; Reported: (%s) %s",
-                    change.wiki(), change.user(), change.title(), change.revision()._new(),
+            Log.infof("Processed Change(wiki=%s, user=%s, page=%s, revision=%s, type=%s): Extracted: (%s) %s; Reported: (%s) %s",
+                    change.wiki(), change.user(), change.title(), change.revision()._new(), change.type(),
                     extractedHostnames.size(), extractedHostnames,
                     reportedHostnames.size(), reportedHostnames.stream()
                             .map(hostname -> "%s (%s)".formatted(hostname.hostname(), hostname.score()))
                             .toList());
         } catch (Exception e) {
-            Log.errorf("Unable to process Change(wiki=%s, user=%s, page=%s, revision=%s): %s",
-                    change.wiki(), change.user(), change.title(), change.revision()._new(), e.getMessage());
+            Log.errorf("Unable to process Change(wiki=%s, user=%s, page=%s, revision=%s, type=%s): %s",
+                    change.wiki(), change.user(), change.title(), change.revision()._new(), change.type(), e.getMessage());
         }
     }
 

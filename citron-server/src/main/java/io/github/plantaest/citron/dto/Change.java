@@ -1,6 +1,7 @@
 package io.github.plantaest.citron.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.annotation.Nullable;
 
 import java.net.URI;
 
@@ -48,13 +49,15 @@ public record Change(
     ) {}
 
     public record Length(
-            int old,
+            @Nullable
+            Integer old,
             @JsonProperty("new")
             int _new
     ) {}
 
     public record Revision(
-            long old,
+            @Nullable
+            Long old,
             @JsonProperty("new")
             long _new
     ) {}

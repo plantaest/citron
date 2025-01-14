@@ -2,6 +2,7 @@ package io.github.plantaest.citron.client;
 
 import io.github.plantaest.citron.dto.CompareRevisionsResponse;
 import io.github.plantaest.citron.dto.WikiPageResponse;
+import io.github.plantaest.citron.dto.WikiRevisionResponse;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -23,5 +24,10 @@ public interface WikiRestClient {
     @Path("/page/{title}")
     @Produces(MediaType.APPLICATION_JSON)
     WikiPageResponse getPage(@PathParam("title") String title);
+
+    @GET
+    @Path("/revision/{revisionId}")
+    @Produces(MediaType.APPLICATION_JSON)
+    WikiRevisionResponse getRevision(@PathParam("revisionId") long revisionId);
 
 }
