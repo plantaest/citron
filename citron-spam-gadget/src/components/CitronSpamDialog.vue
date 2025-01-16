@@ -207,6 +207,25 @@ const onDefaultAction = () => {
 
           <div class="citron-spam-hostname-inner-bottom">
             <div
+              class="citron-spam-feedback"
+              :class="{
+                'citron-spam-feedback-good': feedback.status === 0,
+                'citron-spam-feedback-bad': feedback.status === 1,
+              }"
+              v-for="feedback in report.feedbacks.filter(
+                (feedback) => feedback.hostname == hostname.hostname,
+              )"
+              :key="feedback.hash"
+              :title="feedback.createdAt"
+            >
+              <cdx-icon
+                class="citron-spam-feedback-icon"
+                :icon="feedback.status === 0 ? cdxIconArrowNext : cdxIconAlert"
+                size="small"
+              />
+              <span class="citron-spam-feedback-user">{{ feedback.user }}</span>
+            </div>
+            <div
               class="citron-spam-revision"
               v-for="revision in getRevisions(hostname.revisionIds)"
               :key="revision.id"
@@ -338,7 +357,8 @@ const onDefaultAction = () => {
   align-items: center;
 }
 
-.citron-spam-hostname-score {
+.citron-spam-hostname-score,
+.citron-spam-feedback {
   white-space: nowrap;
   font-size: 0.75rem;
   display: flex;
@@ -360,6 +380,24 @@ const onDefaultAction = () => {
   display: flex;
   gap: 0.625rem;
   flex-wrap: wrap;
+}
+
+.citron-spam-feedback {
+  padding-block: 0.3rem;
+  padding-inline: 0.5rem;
+  line-height: 1.4;
+}
+
+.citron-spam-feedback-icon {
+  margin-right: 0.375rem;
+}
+
+.citron-spam-feedback-bad .citron-spam-feedback-icon {
+  color: var(--color-icon-error, #f54739);
+}
+
+.citron-spam-feedback-good .citron-spam-feedback-icon {
+  color: var(--color-progressive, #88a3e8);
 }
 
 .citron-spam-revision {
@@ -420,6 +458,18 @@ const onDefaultAction = () => {
     var(--background-color-progressive-subtle--hover, #dce3f9) var(--percentage),
     var(--background-color-progressive-subtle, #f1f4fd) var(--percentage)
   );
+  color: var(--color-progressive, #36c);
+  border: 1px solid var(--border-color-progressive, #6485d1);
+}
+
+.citron-spam-feedback-bad {
+  background-color: var(--background-color-destructive-subtle, #ffe9e5);
+  color: var(--color-destructive, #bf3c2c);
+  border: 1px solid var(--border-color-destructive, #f54739);
+}
+
+.citron-spam-feedback-good {
+  background-color: var(--background-color-progressive-subtle, #f1f4fd);
   color: var(--color-progressive, #36c);
   border: 1px solid var(--border-color-progressive, #6485d1);
 }
