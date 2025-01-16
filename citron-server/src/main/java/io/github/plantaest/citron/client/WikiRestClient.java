@@ -8,6 +8,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
+import org.eclipse.microprofile.faulttolerance.Retry;
 import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
@@ -18,6 +19,7 @@ public interface WikiRestClient {
     @GET
     @Path("/revision/{from}/compare/{to}")
     @Produces(MediaType.APPLICATION_JSON)
+    @Retry(maxRetries = 5, delay = 800, jitter = 200)
     CompareRevisionsResponse compareRevisions(@PathParam("from") long from, @PathParam("to") long to);
 
     @GET
@@ -28,6 +30,7 @@ public interface WikiRestClient {
     @GET
     @Path("/revision/{revisionId}")
     @Produces(MediaType.APPLICATION_JSON)
+    @Retry(maxRetries = 5, delay = 800, jitter = 200)
     WikiRevisionResponse getRevision(@PathParam("revisionId") long revisionId);
 
 }

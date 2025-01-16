@@ -28,7 +28,9 @@ import io.quarkus.arc.properties.IfBuildProperty;
 import io.quarkus.cache.CacheResult;
 import io.quarkus.logging.Log;
 import io.quarkus.runtime.Startup;
+import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.subscription.Cancellable;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -40,10 +42,12 @@ import org.jboss.resteasy.reactive.client.SseEvent;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -80,6 +84,7 @@ public class StreamRunner {
 
     private Cancellable cancellable;
     private final AtomicReference<String> lastEventIdRef = new AtomicReference<>();
+    private final AtomicLong eventCounter = new AtomicLong(0);
 
     @PostConstruct
     void init() {
@@ -88,10 +93,12 @@ public class StreamRunner {
                 .onSubscription()
                 .invoke(() -> Log.info("Connected to Wikimedia EventStreams"))
                 .onFailure()
-                .retry().indefinitely()
+                .retry().withBackOff(Duration.ofSeconds(1), Duration.ofMinutes(2)).indefinitely()
                 .subscribe()
                 .with(
-                        this::onItem,
+                        item -> Uni.createFrom().item(item)
+                                .onItem().invoke(this::onItem)
+                                .subscribe().asCompletionStage(),
                         failure -> Log.errorf("Error on EventStreams: %s", failure),
                         () -> Log.info("EventStreams closed")
                 );
@@ -104,8 +111,21 @@ public class StreamRunner {
         }
     }
 
+    @Scheduled(every = "5m", delay = 5)
+    void checkEventFlow() {
+        long count = eventCounter.getAndSet(0);
+        if (count == 0) {
+            Log.warn("No events received in the last 5 minutes. Checking stream...");
+            cleanup();
+            init();
+        } else {
+            Log.infof("Received %d events in the last 5 minutes", count);
+        }
+    }
+
     private void onItem(SseEvent<String> event) {
         lastEventIdRef.set(event.id());
+        eventCounter.incrementAndGet();
         Change change = parse(event.data());
         Set<String> allowedWikiIds = citronConfig.spamModule().wikis().keySet();
 
@@ -115,7 +135,7 @@ public class StreamRunner {
                 && !change.bot()
                 && !change.patrolled()
                 && allowedWikiIds.contains(change.wiki())
-                && isWithinLast30Seconds(change.timestamp())
+                && isWithinLast5Minutes(change.timestamp())
         ) {
             managedExecutor.execute(() -> process(change));
         }
@@ -234,9 +254,9 @@ public class StreamRunner {
         }
     }
 
-    private boolean isWithinLast30Seconds(long timestamp) {
+    private boolean isWithinLast5Minutes(long timestamp) {
         long currentTimestamp = Instant.now().getEpochSecond();
-        return currentTimestamp - timestamp <= 30 && currentTimestamp >= timestamp;
+        return currentTimestamp - timestamp <= 5 * 60 && currentTimestamp >= timestamp;
     }
 
 }
