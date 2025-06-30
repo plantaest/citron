@@ -25,6 +25,7 @@ public interface WikiRestClient {
     @GET
     @Path("/page/{title}")
     @Produces(MediaType.APPLICATION_JSON)
+    @Retry(maxRetries = 5, delay = 800, jitter = 200)
     WikiPageResponse getPage(@PathParam("title") String title);
 
     @GET

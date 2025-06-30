@@ -72,8 +72,15 @@ public class ReportRunner {
                     currentReport = objectMapper.readValue(wikiPageResponse.source(), Report.class);
                     feedbacks.addAll(currentReport.feedbacks());
                 } catch (Exception e) {
-                    Log.warnf("Unable to get or parse report from '%s' on %s; it may not exist yet: %s",
-                            reportPageTitle, wiki.wikiId(), e.getMessage());
+                    // Handle only when this exception message appears:
+                    // Received: 'Not Found, status code 404' when invoking REST Client method:
+                    // 'io.github.plantaest.citron.client.WikiRestClient#getPage'
+                    if (e.getMessage().contains("404")) {
+                        Log.warnf("Unable to get or parse report from '%s' on %s; it may not exist yet: %s",
+                                reportPageTitle, wiki.wikiId(), e.getMessage());
+                    } else {
+                        continue;
+                    }
                 }
 
                 List<Report.Hostname> hostnames = reportedHostnames.stream()
@@ -132,8 +139,12 @@ public class ReportRunner {
                         .build();
 
                 // Comparison
-                Report _currentReport = ReportBuilder.builder(currentReport).updatedAt("__").build();
-                Report _report = ReportBuilder.builder(report).updatedAt("__").build();
+                Report _currentReport = ReportBuilder.builder(currentReport)
+                        .updatedAt("__")
+                        .build();
+                Report _report = ReportBuilder.builder(report)
+                        .updatedAt("__")
+                        .build();
 
                 if (_currentReport.equals(_report)) {
                     continue;
